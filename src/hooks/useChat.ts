@@ -17,24 +17,33 @@ export async function sendMessage(
   message: string,
   sessionId: string
 ): Promise<Message> {
-  const res = await fetch(`${API}/chat/message`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, session_id: sessionId }),
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 60000) // 60s max
 
-  if (!res.ok) {
-    return {
-      role: 'assistant',
-      content:
-        'Désolé, je rencontre une difficulté technique. Veuillez réessayer dans quelques instants.',
+  try {
+    const res = await fetch(`${API}/chat/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, session_id: sessionId }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+
+    if (!res.ok) {
+      return {
+        role: 'assistant',
+        content: 'Désolé, je rencontre une difficulté technique. Veuillez réessayer.',
+      }
     }
-  }
 
-  const data = await res.json()
-  return {
-    role: 'assistant',
-    content: data.response,
+    const data = await res.json()
+    return { role: 'assistant', content: data.response }
+  } catch (err: any) {
+    clearTimeout(timeout)
+    if (err.name === 'AbortError') {
+      return { role: 'assistant', content: 'Désolé, ma réponse prend trop de temps. Pouvez-vous reformuler ?' }
+    }
+    return { role: 'assistant', content: 'Désolé, je rencontre une difficulté technique. Veuillez réessayer.' }
   }
 }
 
