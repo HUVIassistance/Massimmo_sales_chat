@@ -227,3 +227,5 @@
   flex-shrink: 0;
 }
 .widget-footer a { color: var(--accent); text-decoration: none; }
+.footer-legal { margin: 4px 0 0; font-size: 8px; color: #555; line-height: 1.3; }
+.footer-legal a { color: #666; }
